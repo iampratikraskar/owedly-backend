@@ -3,20 +3,22 @@ package com.owedly.mapper;
 import com.owedly.dto.response.UserResponse;
 import com.owedly.entity.User;
 
-public final class UserMapper {
+import org.springframework.stereotype.Component;
 
-    private UserMapper() {
-    }
+@Component
+public class UserMapper {
 
-    public static UserResponse toResponse(User user) {
+    public UserResponse toResponse(User user) {
 
-        return new UserResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getRole(),
-                user.getCreatedAt(),
-                user.getUpdatedAt()
-        );
+        UserResponse response = new UserResponse();
+
+        response.setId(user.getId());
+        response.setName(user.getName());
+        response.setEmail(user.getEmail());
+        response.setRole(user.getRole());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
+
+        return response;
     }
 }

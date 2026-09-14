@@ -2,12 +2,14 @@ package com.owedly.dto.response;
 
 import java.time.LocalDateTime;
 
+import com.owedly.entity.Role;
+
 public class UserResponse {
 
     private Long id;
     private String name;
     private String email;
-    private String role;
+    private Role role;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -18,7 +20,7 @@ public class UserResponse {
             Long id,
             String name,
             String email,
-            String role,
+            Role role,
             LocalDateTime createdAt,
             LocalDateTime updatedAt) {
 
@@ -42,7 +44,7 @@ public class UserResponse {
         return email;
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 
@@ -53,4 +55,30 @@ public class UserResponse {
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public void setRole(Role role) {
+		this.role = role;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
+	
 }
