@@ -84,4 +84,20 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN)
                 .body(response);
     }
+    
+    @ExceptionHandler(InvalidExpenseException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidExpense(
+            InvalidExpenseException exception) {
+
+        Map<String, Object> response = Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "error", "Invalid Expense",
+                "message", exception.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
 }
