@@ -22,4 +22,17 @@ public interface ExpenseService {
             Long expenseId,
             String userEmail
     );
+    
+    ExpenseResponse updateExpense(
+            Long expenseId,
+            CreateExpenseRequest request,
+            String userEmail
+    );
+
+    void deleteExpense(
+            Long expenseId,
+            String userEmail
+    );
+    
+    
 }

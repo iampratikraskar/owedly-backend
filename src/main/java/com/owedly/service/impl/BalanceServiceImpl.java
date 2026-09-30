@@ -14,6 +14,7 @@ import com.owedly.repository.GroupMemberRepository;
 import com.owedly.repository.GroupRepository;
 import com.owedly.repository.UserRepository;
 import com.owedly.service.BalanceService;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,8 +39,8 @@ public class BalanceServiceImpl implements BalanceService {
             GroupMemberRepository groupMemberRepository,
             ExpenseRepository expenseRepository,
             ExpenseSplitRepository expenseSplitRepository,
-            UserRepository userRepository) {
-
+            UserRepository userRepository
+    ) {
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.expenseRepository = expenseRepository;
@@ -47,47 +48,85 @@ public class BalanceServiceImpl implements BalanceService {
         this.userRepository = userRepository;
     }
 
+    // =========================================================
+    // GET GROUP BALANCES
+    // =========================================================
+
     @Override
     @Transactional(readOnly = true)
     public List<BalanceResponse> getGroupBalances(
             Long groupId,
-            String userEmail) {
+            String userEmail
+    ) {
 
+        // -----------------------------------------------------
         // 1. Find group
+        // -----------------------------------------------------
+
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Group not found"));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException(
+                                "Group not found with id: " + groupId
+                        )
+                );
 
+        // -----------------------------------------------------
         // 2. Find current user
+        // -----------------------------------------------------
+
         User currentUser = userRepository.findByEmail(userEmail)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException(
+                                "User not found"
+                        )
+                );
 
+        // -----------------------------------------------------
         // 3. Verify current user is a member
-        if (!groupMemberRepository.existsByGroupIdAndUserId(
-                groupId,
-                currentUser.getId())) {
+        // -----------------------------------------------------
 
+        boolean currentUserIsMember =
+                groupMemberRepository.existsByGroupIdAndUserId(
+                        groupId,
+                        currentUser.getId()
+                );
+
+        if (!currentUserIsMember) {
             throw new GroupAccessDeniedException(
                     "You are not a member of this group"
             );
         }
 
+        // -----------------------------------------------------
         // 4. Get all group members
+        // -----------------------------------------------------
+
         List<GroupMember> members =
                 groupMemberRepository.findByGroupId(groupId);
 
+        // -----------------------------------------------------
         // 5. Get all group expenses
-        List<Expense> expenses =
-                expenseRepository.findByGroupIdOrderByExpenseDateDesc(groupId);
+        // -----------------------------------------------------
 
+        List<Expense> expenses =
+                expenseRepository.findByGroupIdOrderByExpenseDateDesc(
+                        groupId
+                );
+
+        // -----------------------------------------------------
         // 6. Initialize balance maps
-        Map<Long, BigDecimal> totalPaid = new HashMap<>();
-        Map<Long, BigDecimal> totalShare = new HashMap<>();
+        // -----------------------------------------------------
+
+        Map<Long, BigDecimal> totalPaid =
+                new HashMap<>();
+
+        Map<Long, BigDecimal> totalShare =
+                new HashMap<>();
 
         for (GroupMember member : members) {
 
-            Long userId = member.getUser().getId();
+            Long userId =
+                    member.getUser().getId();
 
             totalPaid.put(
                     userId,
@@ -100,11 +139,19 @@ public class BalanceServiceImpl implements BalanceService {
             );
         }
 
-        // 7. Get ALL splits for this group in one query
-        List<ExpenseSplit> allSplits =
-                expenseSplitRepository.findByExpenseGroupId(groupId);
+        // -----------------------------------------------------
+        // 7. Get ALL splits for this group
+        // -----------------------------------------------------
 
+        List<ExpenseSplit> allSplits =
+                expenseSplitRepository.findByExpenseGroupId(
+                        groupId
+                );
+
+        // -----------------------------------------------------
         // 8. Group splits by expense ID
+        // -----------------------------------------------------
+
         Map<Long, List<ExpenseSplit>> splitsByExpense =
                 new HashMap<>();
 
@@ -121,41 +168,70 @@ public class BalanceServiceImpl implements BalanceService {
                     .add(split);
         }
 
+        // -----------------------------------------------------
         // 9. Process every expense
+        // -----------------------------------------------------
+
         for (Expense expense : expenses) {
 
             Long payerId =
                     expense.getPaidBy().getId();
 
+            // ---------------------------------------------
             // Add amount paid by payer
+            // ---------------------------------------------
+
+            BigDecimal currentPaid =
+                    totalPaid.getOrDefault(
+                            payerId,
+                            BigDecimal.ZERO
+                    );
+
             totalPaid.put(
                     payerId,
-                    totalPaid.get(payerId)
-                            .add(expense.getAmount())
+                    currentPaid.add(
+                            expense.getAmount()
+                    )
             );
 
+            // ---------------------------------------------
             // Get splits belonging to this expense
+            // ---------------------------------------------
+
             List<ExpenseSplit> splits =
                     splitsByExpense.getOrDefault(
                             expense.getId(),
                             List.of()
                     );
 
+            // ---------------------------------------------
             // Add each member's share
+            // ---------------------------------------------
+
             for (ExpenseSplit split : splits) {
 
                 Long userId =
                         split.getUser().getId();
 
+                BigDecimal currentShare =
+                        totalShare.getOrDefault(
+                                userId,
+                                BigDecimal.ZERO
+                        );
+
                 totalShare.put(
                         userId,
-                        totalShare.get(userId)
-                                .add(split.getShareAmount())
+                        currentShare.add(
+                                split.getShareAmount()
+                        )
                 );
             }
         }
 
+        // -----------------------------------------------------
         // 10. Build balance response
+        // -----------------------------------------------------
+
         List<BalanceResponse> responses =
                 new ArrayList<>();
 
@@ -168,11 +244,19 @@ public class BalanceServiceImpl implements BalanceService {
                     user.getId();
 
             BigDecimal paid =
-                    totalPaid.get(userId);
+                    totalPaid.getOrDefault(
+                            userId,
+                            BigDecimal.ZERO
+                    );
 
             BigDecimal share =
-                    totalShare.get(userId);
+                    totalShare.getOrDefault(
+                            userId,
+                            BigDecimal.ZERO
+                    );
 
+            // Positive = user should receive money
+            // Negative = user owes money
             BigDecimal netBalance =
                     paid.subtract(share);
 

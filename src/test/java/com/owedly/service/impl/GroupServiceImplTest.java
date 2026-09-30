@@ -11,6 +11,7 @@ import com.owedly.exception.GroupAccessDeniedException;
 import com.owedly.repository.GroupMemberRepository;
 import com.owedly.repository.GroupRepository;
 import com.owedly.repository.UserRepository;
+import com.owedly.service.ActivityLogService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class GroupServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+    
+    @Mock
+    private ActivityLogService activityLogService;
 
     @InjectMocks
     private GroupServiceImpl groupService;

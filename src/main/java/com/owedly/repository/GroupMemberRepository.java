@@ -1,9 +1,10 @@
 package com.owedly.repository;
 
-import com.owedly.entity.GroupMember;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
+import com.owedly.entity.GroupMember;
 
 public interface GroupMemberRepository
         extends JpaRepository<GroupMember, Long> {
@@ -18,4 +19,6 @@ public interface GroupMemberRepository
     List<GroupMember> findByUserId(Long userId);
 
     long countByGroupId(Long groupId);
+    
+    long countByUserId(Long userId);
 }

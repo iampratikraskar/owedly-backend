@@ -23,7 +23,42 @@ public class ExpenseController {
     public ExpenseController(ExpenseService expenseService) {
         this.expenseService = expenseService;
     }
+    
+    @DeleteMapping("/expenses/{expenseId}")
+    public ResponseEntity<Void> deleteExpense(
+            @PathVariable Long expenseId,
+            Authentication authentication
+    ) {
 
+        String userEmail = authentication.getName();
+
+        expenseService.deleteExpense(
+                expenseId,
+                userEmail
+        );
+
+        return ResponseEntity.noContent().build();
+    }
+
+    
+    @PutMapping("/expenses/{expenseId}")
+    public ResponseEntity<ExpenseResponse> updateExpense(
+            @PathVariable Long expenseId,
+            @Valid @RequestBody CreateExpenseRequest request,
+            Authentication authentication
+    ) {
+
+        String userEmail = authentication.getName();
+
+        return ResponseEntity.ok(
+                expenseService.updateExpense(
+                        expenseId,
+                        request,
+                        userEmail
+                )
+        );
+    }
+    
     @PostMapping("/groups/{groupId}/expenses")
     public ResponseEntity<ExpenseResponse> createExpense(
             @PathVariable Long groupId,

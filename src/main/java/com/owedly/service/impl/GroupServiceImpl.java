@@ -1,9 +1,15 @@
 package com.owedly.service.impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.owedly.dto.request.AddGroupMemberRequest;
 import com.owedly.dto.request.CreateGroupRequest;
 import com.owedly.dto.response.GroupMemberResponse;
 import com.owedly.dto.response.GroupResponse;
+import com.owedly.entity.ActivityType;
 import com.owedly.entity.Group;
 import com.owedly.entity.GroupMember;
 import com.owedly.entity.User;
@@ -12,12 +18,8 @@ import com.owedly.exception.ResourceNotFoundException;
 import com.owedly.repository.GroupMemberRepository;
 import com.owedly.repository.GroupRepository;
 import com.owedly.repository.UserRepository;
+import com.owedly.service.ActivityLogService;
 import com.owedly.service.GroupService;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @Transactional
@@ -26,15 +28,18 @@ public class GroupServiceImpl implements GroupService {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
     public GroupServiceImpl(
             GroupRepository groupRepository,
             GroupMemberRepository groupMemberRepository,
-            UserRepository userRepository) {
-
+            UserRepository userRepository,
+            ActivityLogService activityLogService
+    ) {
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.userRepository = userRepository;
+        this.activityLogService = activityLogService;
     }
 
     @Override
@@ -47,11 +52,13 @@ public class GroupServiceImpl implements GroupService {
         Group group = new Group();
 
         group.setName(request.getName().trim());
+
         group.setDescription(
                 request.getDescription() == null
                         ? null
                         : request.getDescription().trim()
         );
+
         group.setCreatedBy(creator);
 
         Group savedGroup = groupRepository.save(group);
@@ -63,6 +70,15 @@ public class GroupServiceImpl implements GroupService {
         creatorMembership.setUser(creator);
 
         groupMemberRepository.save(creatorMembership);
+
+        // Log group creation activity
+        activityLogService.log(
+                creator,
+                savedGroup,
+                ActivityType.GROUP_CREATED,
+                "Created group \"" + savedGroup.getName() + "\"",
+                savedGroup.getId()
+        );
 
         return buildGroupResponse(savedGroup);
     }
@@ -121,6 +137,15 @@ public class GroupServiceImpl implements GroupService {
         membership.setUser(newMember);
 
         groupMemberRepository.save(membership);
+
+        // Log member added activity
+        activityLogService.log(
+                currentUser,
+                group,
+                ActivityType.MEMBER_ADDED,
+                "Added " + newMember.getName() + " to the group",
+                newMember.getId()
+        );
 
         return buildGroupResponse(group);
     }
